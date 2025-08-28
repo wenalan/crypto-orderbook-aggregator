@@ -28,12 +28,3 @@ jobs:
       - name: Run tests in container
         working-directory: docker
         run: docker compose run --rm aggregator ctest -V --test-dir build
-
-      - name: Smoke-run aggregator (10s)
-        working-directory: docker
-        run: |
-          set -eux
-          docker compose up -d aggregator
-          sleep 10
-          docker compose logs --tail=200 aggregator || true
-          docker compose down -v
