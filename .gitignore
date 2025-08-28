@@ -1,0 +1,21 @@
+# Build artifacts
+/build/
+/cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.o
+*.a
+*.so
+*.dSYM/
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Docker local stuff (if any)
+docker/*.log
+
+# Misc
+*.swp
+.DS_Store

@@ -1,0 +1,17 @@
+syntax = "proto3";
+package bookfeed;
+
+message SubscribeRequest { string symbol = 1; }
+message Level { double price = 1; double size = 2; }
+message Source { string venue = 1; int64 last_update_ms = 2; bool healthy = 3; }
+
+message ConsolidatedBook {
+  int64 ts_ms = 1;
+  repeated Level bids = 2;
+  repeated Level asks = 3;
+  repeated Source sources = 4;
+}
+
+service BookFeed {
+  rpc StreamBook(SubscribeRequest) returns (stream ConsolidatedBook);
+}
