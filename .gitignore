@@ -1,0 +1,16 @@
+# Build artifacts
+/build/
+/cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+*.o
+*.a
+*.so
+*.dSYM/
+
+# Docker 
+docker/*.log
+
+# Misc
+*.swp
+.DS_Store

@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  aggregator:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.aggregator
+    container_name: agg
+    ports: ["50051:50051"]
+  client_bbo:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    depends_on: [aggregator]
+    command: ./build/clients/bbo/client_bbo
+  client_volume:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    depends_on: [aggregator]
+    command: ./build/clients/volume_bands/client_volume
+  client_pricebands:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.client
+    depends_on: [aggregator]
+    command: ./build/clients/price_bands/client_pricebands
