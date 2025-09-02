@@ -48,7 +48,7 @@ public:
         std::lock_guard<std::mutex> lk(mu_);
 
         // --- Debug: print per-venue BBOs and source count ---
-        if (debug_mode) {
+        if constexpr (debug_mode) {
           auto bb = [](const OrderBook& ob){
             double bid_p=0.0, bid_s=0.0, ask_p=0.0, ask_s=0.0;
             if (!ob.bids.empty()) { 
@@ -87,7 +87,7 @@ public:
         auto merged = consolidate({book_binance_, book_okx_, book_kraken_}, cfg_);
 
         // --- Debug: print merged BBO ---
-        if (debug_mode) {
+        if constexpr (debug_mode) {
           if (!merged.bids.empty() || !merged.asks.empty()) {
             double mbp=0.0, mbs=0.0, map=0.0, mas=0.0;
             if (!merged.bids.empty()) { 
