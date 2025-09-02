@@ -103,34 +103,26 @@ docker compose up
 
 ## 3) Exchange Strategy
 
-- **Binance — WS-first connect, REST snapshot baseline (required)**  
-  1) Open WS first and **buffer** incoming updates (U/u/pu).  
-  2) Fetch **REST snapshot (required)** to obtain `lastUpdateId = L`.  
-  3) Drop buffered frames with `u <= L`. Find the first buffered frame that **bridges** the gap (`U <= L+1 && u >= L+1`, or `pu == L`), apply it, then apply the remaining buffered frames **in order**; set `last_id = u`.  
-  4) Enter steady-state and continue applying live WS updates under the official continuity rules.
-
-- **OKX — WS snapshot first**  
-  Subscribe to `books*`; **ignore updates until the WS snapshot arrives** (`action:"snapshot"` or `prevSeqId == -1`). After baseline, require continuity: `prevSeqId == lastSeqId`, otherwise resubscribe.
-
-- **Kraken — WS snapshot first**  
-  Same pattern as OKX: wait for snapshot, then apply incremental updates; drop updates seen before snapshot.
-
-#### Official references
-
-- **Binance (Spot)** — Diff. Depth stream & local order book maintenance:  
+- **Binance — WS-first connect, REST snapshot baseline**
+  
   [Diff. Depth Stream](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#diff-depth-stream),  
   [How to manage a local order book correctly](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#how-to-manage-a-local-order-book-correctly).  
   Notes:
   - Use the REST depth snapshot (`lastUpdateId`) plus WS diff depth events to build a local book.
   - Spot payloads contain `U`/`u`. Bridge the first buffered event so that `lastUpdateId` is within `[U, u]`, then apply subsequent events in order, updating the local update id to `u`. Older events (`u` <= local id) are discarded.
+  - Enter steady-state and continue applying live WS updates under the official continuity rules.
 
-- **OKX (V5 WebSocket)** — Order book channel: `books` (400 levels). Variants: `books5`, `books50-l2-tbt`, `books-l2-tbt`.  
+- **OKX — WS snapshot first** — Order book channel: `books` (400 levels). Variants: `books5`, `books50-l2-tbt`, `books-l2-tbt`.
+  
   [Public Channels – Books](https://app.okx.com/docs-v5/en/#order-book-trading-market-data-ws-order-book-channel).  
-  Notes: first push carries `action:"snapshot"` with `prevSeqId = -1`. Subsequent messages are `action:"update"` and must satisfy `prevSeqId == previous seqId`. Checksum/sequence rules are documented in the same section.
+  Notes:
+  - First push carries `action:"snapshot"` with `prevSeqId = -1`. Subsequent messages are `action:"update"` and must satisfy `prevSeqId == previous seqId`. Checksum/sequence rules are documented in the same section.
 
-- **Kraken (WebSocket v2)** — `book` channel:  
+- **Kraken — WS snapshot first**  — `book` channel:
+  
   [Book (Level 2)](https://docs.kraken.com/api/docs/websocket-v2/book)  
-  Notes: snapshot-then-updates; see the guide for checksum and recovery:  
+  Notes:
+  - Snapshot-then-updates; see the guide for checksum and recovery:  
   [Spot Websockets (v2) – Book Checksum](https://docs.kraken.com/api/docs/guides/spot-ws-book-v2/).
 
 ---
@@ -174,12 +166,15 @@ docker-compose.yml
 
 *Trade-off*: OO is simplest; CRTP/Concepts reduce overhead and centralize orchestration but raise template complexity. We can switch if performance becomes critical.
 
-### 5.2 Consistency & ops
+### 5.2 Fixed-Point
+In the future, prefer **fixed-point integers** to eliminate rounding drift, make checksums deterministic, and ensure consistent behavior across languages and platforms.
+
+### 5.3 Consistency & ops
 - **OKX checksum (`cs`)** after applying deltas; resubscribe on mismatch.  
 - **Backtesting**: offline replay (pcap/json) that uses the exact parsing/merge path.  
 - **Liveness**: periodic ping/pong, read/write timeouts, and exponential backoff with jitter.
 
-### 5.3 Configuration
+### 5.4 Configuration
 
 - Extract common toggles (trading pair, aggregation depth, emit frequency/TopN, etc.) into a lightweight YAML config, while keeping zero-config as the default. Users can switch pairs or tune display parameters without changing code.
 
