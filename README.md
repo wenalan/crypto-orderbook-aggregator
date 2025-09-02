@@ -9,11 +9,8 @@
 ## 0) Interpreting the Outputs
 
 - **Merged BBO can look “locked/crossed”, that’s normal.**  
-  It takes the **best bid across venues** and the **best ask across venues**. They can come from *different* exchanges, so `best_bid >= best_ask` is possible. This is not a consolidation bug.
-
-- **`(sources=3/3)` indicates venue readiness.**  
-  The counter shows **connected / configured** venues. Immediately after startup it may be `1/3` while adapters connect, snapshot, and resync, give it a few seconds.
-
+  It takes the **best bid across venues** and the **best ask across venues**. They can come from *different* exchanges, so `best_bid >= best_ask` is possible. This is not a consolidation bug. The counter shows **connected / configured** venues. Immediately after startup it may be `1/3` while adapters connect, snapshot, and resync, give it a few seconds.
+  
   Example:
   ```
   agg                  | [AGG] src BBOs [bid/ask]  BINANCE 110110.820000@1.530130/110110.830000@8.477670  OKX 110112.700000@0.076343/110112.800000@1.295506  KRAKEN 110096.100000@0.058000/110097.900000@0.090821  (sources=3/3)
@@ -34,7 +31,7 @@
   ```
 
 - **Volume Bands plateau when target notional exceeds visible depth.**  
-  If the notional is larger than what the current book can fill (also capped by `topN`), **VWAP/qty** will flatten and **filled_notional** stops increasing. The volume band defaults have been revised since the original bands in the question were too large. Without this adjustment, the volume levels would have appeared almost identical..
+  If the notional is larger than what the current book can fill (also capped by `topN`), **VWAP/qty** will flatten and **filled_notional** stops increasing. The volume band defaults have been revised since the original bands in the question were too large. Without this adjustment, the volume levels would have appeared almost identical.
 
   ```
   client_volume-1      | ts=1756800985962 notional=50000.000000 qty=0.454111 vwap=110105.212815 filled_notional=50000.000000
@@ -74,7 +71,6 @@ docker compose up
 **CI (GitHub Actions)**
 
 - The repo includes a **GitHub Actions** workflow (in `.github/workflows/`) that **builds the Docker image and runs unit tests** on every push.  
-- Just **push to GitHub**, then check the **Actions** tab to check the result.
 
 ---
 
@@ -162,13 +158,12 @@ docker-compose.yml
 
 ### 5.2 Consistency & ops
 - **OKX checksum (`cs`)** after applying deltas; resubscribe on mismatch.  
-- **Configuration**: make `tick / topN / subscription params / clamp-crossed policy` runtime-configurable.  
 - **Backtesting**: offline replay (pcap/json) that uses the exact parsing/merge path.  
-- **Liveness & graceful shutdown**: `is_open()` guard before closing, periodic ping/pong, read/write timeouts, and exponential backoff with jitter.
+- **Liveness**: periodic ping/pong, read/write timeouts, and exponential backoff with jitter.
 
-### 5.3 Minimal Configuration
+### 5.3 Configuration
 
-- Extract common toggles (trading pair, aggregation depth, emit frequency/TopN, etc.) into a lightweight YAML config, while keeping zero-config as the default. Reviewers/users can switch pairs or tune display parameters without changing code.
+- Extract common toggles (trading pair, aggregation depth, emit frequency/TopN, etc.) into a lightweight YAML config, while keeping zero-config as the default. Users can switch pairs or tune display parameters without changing code.
 
 **Example: `config.yaml`**
 ```yaml
@@ -199,4 +194,4 @@ clients:
   volume_bands:
     bands: [1,5,10,25,50]
     scale: M
-
+```
