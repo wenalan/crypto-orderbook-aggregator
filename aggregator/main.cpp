@@ -13,6 +13,7 @@
 #include <chrono>
 #include <iostream>
 #include <array>
+#include <iomanip>
 
 static constexpr bool debug_mode = true;
 
@@ -69,10 +70,17 @@ public:
           if (!book_binance_.bids.empty() || !book_binance_.asks.empty()) ++sources;
           if (!book_okx_.bids.empty()     || !book_okx_.asks.empty())     ++sources;
           if (!book_kraken_.bids.empty()  || !book_kraken_.asks.empty())  ++sources;
-          std::cout << "[AGG] src BBOs  BINANCE " << b1[0] << "@" << b1[1]
-                    << "  OKX " << b2[0] << "@" << b2[1]
-                    << "  KRAKEN " << b3[0] << "@" << b3[1]
+
+          auto _flags = std::cout.flags();
+          auto _prec  = std::cout.precision();
+          std::cout.setf(std::ios::fixed);
+          std::cout << std::setprecision(6);
+          std::cout << "[AGG] src BBOs [bid/ask]  BINANCE " << b1[0] << "@" << b1[1] << "/" << b1[2] << "@" << b1[3]
+                    << "  OKX " << b2[0] << "@" << b2[1] << "/" << b2[2] << "@" << b2[3]
+                    << "  KRAKEN " << b3[0] << "@" << b3[1] << "/" << b3[2] << "@" << b3[3]
                     << "  (sources=" << sources << "/3)" << std::endl;
+          std::cout.flags(_flags);
+          std::cout.precision(_prec);
         }
         // --- End debug ---
 
@@ -90,8 +98,15 @@ public:
               map = merged.asks.begin()->first;
               mas = merged.asks.begin()->second;
             }
-            std::cout << "[AGG] merged BBO [bid/ask] - " << mbp << "@" 
+
+            auto _flags = std::cout.flags();
+            auto _prec  = std::cout.precision();
+            std::cout.setf(std::ios::fixed);
+            std::cout << std::setprecision(6);
+            std::cout << "[AGG] merged BBO [bid/ask] " << mbp << "@" 
               << mbs << " / " << map << "@" << mas << std::endl;
+            std::cout.flags(_flags);
+            std::cout.precision(_prec);
           }
         }
         // --- End debug ---

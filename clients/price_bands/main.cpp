@@ -3,6 +3,8 @@
 #include <array>
 #include <iostream>
 #include <cmath>
+#include <iomanip>
+
 #include "../../common/bands.h"
 
 int main() {
@@ -13,7 +15,13 @@ int main() {
   grpc::ClientContext ctx;
   auto reader = stub->StreamBook(&ctx, req);
 
-  std::array<int,5> bps{50,100,200,500,1000};
+  auto _flags = std::cout.flags();
+  auto _prec  = std::cout.precision();
+  std::cout.setf(std::ios::fixed);
+  std::cout << std::setprecision(6);
+
+  std::array<int,5> bps{1,2,3,4,5};
+  //std::array<int,5> bps{50,100,200,500,1000};
   bookfeed::ConsolidatedBook book;
   while (reader->Read(&book)) {
     double bb=0, ba=0, bs=0, asz=0;
@@ -34,6 +42,10 @@ int main() {
                 << std::endl;
     }
   }
+
+  std::cout.flags(_flags);
+  std::cout.precision(_prec);
+
   auto status = reader->Finish();
   if (!status.ok()) {
     std::cerr << "Stream ended: " << status.error_message() << std::endl;

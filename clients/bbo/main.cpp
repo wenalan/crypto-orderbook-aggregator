@@ -1,6 +1,8 @@
 #include <grpcpp/grpcpp.h>
 #include "bookfeed.grpc.pb.h"
 #include <iostream>
+#include <iomanip>
+
 #include "../../common/bands.h"
 
 int main() {
@@ -14,6 +16,11 @@ int main() {
   std::unique_ptr<grpc::ClientReader<bookfeed::ConsolidatedBook>> reader(
       stub->StreamBook(&ctx, req));
 
+  auto _flags = std::cout.flags();
+  auto _prec  = std::cout.precision();
+  std::cout.setf(std::ios::fixed);
+  std::cout << std::setprecision(6);
+
   bookfeed::ConsolidatedBook book;
   while (reader->Read(&book)) {
     double bid = 0, ask = 0, bsz = 0, asz = 0;
@@ -26,6 +33,9 @@ int main() {
               << " ask=" << ask << "@" << asz
               << std::endl;
   }
+
+  std::cout.flags(_flags);
+  std::cout.precision(_prec);
 
   grpc::Status status = reader->Finish();
   if (!status.ok()) {
