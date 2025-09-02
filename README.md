@@ -49,6 +49,8 @@
 
 ```bash
 # Build and run all unit tests
+# from repo root
+cd docker
 docker compose build
 docker compose run --rm aggregator ctest -V --test-dir build
 ```
@@ -57,20 +59,11 @@ docker compose run --rm aggregator ctest -V --test-dir build
 
 ```bash
 # Aggregator + three sample clients
+# from repo root
+cd docker
 docker compose build
 docker compose up
 ```
-
-**gRPC endpoint**
-
-- Port: `50051`  
-- Service: `BookFeed`  
-- Method: `StreamBook`  
-- **Full path:** `/bookfeed.BookFeed/StreamBook`
-
-**CI (GitHub Actions)**
-
-- The repo includes a **GitHub Actions** workflow (in `.github/workflows/`) that **builds the Docker image and runs unit tests** on every push.  
 
 ---
 
@@ -99,6 +92,13 @@ docker compose up
   - `clients/price_bands`: VWAP/qty around mid using +/-bps bands  
   - `clients/volume_bands`: VWAP/qty for a given notional
 
+### gRPC endpoint
+
+- Port: `50051`  
+- Service: `BookFeed`  
+- Method: `StreamBook`  
+- **Full path:** `/bookfeed.BookFeed/StreamBook`
+
 ---
 
 ## 3) Exchange Strategy
@@ -114,6 +114,24 @@ docker compose up
 
 - **Kraken — WS snapshot first**  
   Same pattern as OKX: wait for snapshot, then apply incremental updates; drop updates seen before snapshot.
+
+#### Official references
+
+- **Binance (Spot)** — Diff. Depth stream & local order book maintenance:  
+  [Diff. Depth Stream](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#diff-depth-stream),  
+  [How to manage a local order book correctly](https://developers.binance.com/docs/binance-spot-api-docs/web-socket-streams#how-to-manage-a-local-order-book-correctly).  
+  Notes:
+  - Use the REST depth snapshot (`lastUpdateId`) plus WS diff depth events to build a local book.
+  - Spot payloads contain `U`/`u`. Bridge the first buffered event so that `lastUpdateId` is within `[U, u]`, then apply subsequent events in order, updating the local update id to `u`. Older events (`u` <= local id) are discarded.
+
+- **OKX (V5 WebSocket)** — Order book channel: `books` (400 levels). Variants: `books5`, `books50-l2-tbt`, `books-l2-tbt`.  
+  [Public Channels – Books](https://app.okx.com/docs-v5/en/#order-book-trading-market-data-ws-order-book-channel).  
+  Notes: first push carries `action:"snapshot"` with `prevSeqId = -1`. Subsequent messages are `action:"update"` and must satisfy `prevSeqId == previous seqId`. Checksum/sequence rules are documented in the same section.
+
+- **Kraken (WebSocket v2)** — `book` channel:  
+  [Book (Level 2)](https://docs.kraken.com/api/docs/websocket-v2/book)  
+  Notes: snapshot-then-updates; see the guide for checksum and recovery:  
+  [Spot Websockets (v2) – Book Checksum](https://docs.kraken.com/api/docs/guides/spot-ws-book-v2/).
 
 ---
 
