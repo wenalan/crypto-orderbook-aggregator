@@ -1,5 +1,7 @@
 # README
 
+[![CI (docker-compose)](https://github.com/wenalan/crypto-orderbook-aggregator/actions/workflows/ci.yml/badge.svg)](https://github.com/wenalan/crypto-orderbook-aggregator/actions/workflows/ci.yml)
+
 > A runnable three-exchange (Binance / OKX / Kraken) order book aggregator that exposes a gRPC live consolidated book, plus three sample clients (BBO / Price Bands / Volume Bands). 
 > Build, test, and run everything via Docker.
 
