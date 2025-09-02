@@ -12,18 +12,37 @@
   It takes the **best bid across venues** and the **best ask across venues**. They can come from *different* exchanges, so `best_bid >= best_ask` is possible. This is not a consolidation bug.
 
 - **`(sources=3/3)` indicates venue readiness.**  
+  The counter shows **connected / configured** venues. Immediately after startup it may be `1/3` while adapters connect, snapshot, and resync, give it a few seconds.
+
   Example:
   ```
-  [AGG] src BBOs [bid/ask]  BINANCE ...  OKX ...  KRAKEN ...  (sources=3/3)
+  agg                  | [AGG] src BBOs [bid/ask]  BINANCE 110110.820000@1.530130/110110.830000@8.477670  OKX 110112.700000@0.076343/110112.800000@1.295506  KRAKEN 110096.100000@0.058000/110097.900000@0.090821  (sources=3/3)
+  agg                  | [AGG] merged BBO [bid/ask] 110112.600000@0.076343 / 110097.900000@0.090821
   ```
-  The counter shows **connected / configured** venues. Immediately after startup it may be `1/3` while adapters connect, snapshot, and resync, give it a few seconds.
 
 - **Price Bands may look identical when bands are too wide.**  
   If a band’s upper/lower price already covers all visible depth (`topN`), widening it (e.g., from +50 to +1000 bps) won’t add levels, **qty/VWAP remain unchanged**.  
   For the demo I **reduced** default bands to highlight differences; still, depending on tick alignment/spread, **5 bps** can overlap with **4 bps** and yield the same result.
 
+  Example:
+  ```
+  client_pricebands-1  | ts=1756800985993 +1bps qty=15.585861 vwap=110111.858607 | -1bps qty=5.918813 vwap=110107.528456
+  client_pricebands-1  | ts=1756800985993 +2bps qty=37.288590 vwap=110117.536954 | -2bps qty=28.410474 vwap=110092.053620
+  client_pricebands-1  | ts=1756800985993 +3bps qty=64.651990 vwap=110124.042090 | -3bps qty=49.541464 vwap=110085.848624
+  client_pricebands-1  | ts=1756800985993 +4bps qty=80.108762 vwap=110127.534850 | -4bps qty=56.544440 vwap=110084.096020
+  client_pricebands-1  | ts=1756800985993 +5bps qty=80.108762 vwap=110127.534850 | -5bps qty=56.544440 vwap=110084.096020
+  ```
+
 - **Volume Bands plateau when target notional exceeds visible depth.**  
   If the notional is larger than what the current book can fill (also capped by `topN`), **VWAP/qty** will flatten and **filled_notional** stops increasing. The volume band defaults have been revised since the original bands in the question were too large. Without this adjustment, the volume levels would have appeared almost identical..
+
+  ```
+  client_volume-1      | ts=1756800985962 notional=50000.000000 qty=0.454111 vwap=110105.212815 filled_notional=50000.000000
+  client_volume-1      | ts=1756800985962 notional=100000.000000 qty=0.908200 vwap=110107.932858 filled_notional=100000.000000
+  client_volume-1      | ts=1756800985962 notional=200000.000000 qty=1.816375 vwap=110109.416409 filled_notional=200000.000000
+  client_volume-1      | ts=1756800985962 notional=500000.000000 qty=4.540901 vwap=110110.306559 filled_notional=500000.000000
+  client_volume-1      | ts=1756800985962 notional=1000000.000000 qty=9.081777 vwap=110110.604267 filled_notional=1000000.000000
+  ```
 
 ---
 
@@ -147,17 +166,37 @@ docker-compose.yml
 - **Backtesting**: offline replay (pcap/json) that uses the exact parsing/merge path.  
 - **Liveness & graceful shutdown**: `is_open()` guard before closing, periodic ping/pong, read/write timeouts, and exponential backoff with jitter.
 
-### 5.3 Single canonical symbol via YAML
-Maintain one canonical symbol and let the aggregator map it per venue:
+### 5.3 Minimal Configuration
 
+- Extract common toggles (trading pair, aggregation depth, emit frequency/TopN, etc.) into a lightweight YAML config, while keeping zero-config as the default. Reviewers/users can switch pairs or tune display parameters without changing code.
+
+**Example: `config.yaml`**
 ```yaml
-# symbols.yaml
-BTC_USDT:
-  BINANCE: BTCUSDT
-  OKX: BTC-USDT
-  KRAKEN:
-    ws:  BTC/USDT
-    rest: BTCUSDT
-```
+pair: BTC-USDT
 
-Subscribe once with `BTC_USDT`; the aggregator resolves venue-specific wire symbols internally.
+exchanges:
+  binance:
+    enabled: true
+    symbol: BTCUSDT
+    channel: depth@100ms
+  okx:
+    enabled: true
+    instId: BTC-USDT
+    channel: books
+  kraken:
+    enabled: true
+    pair: BTC/USDT
+    channel: book
+
+aggregation:
+  levels_per_side: 200       # maintained L2 depth per side
+  emit_interval_ms: 200      # consolidated book emit cadence (ms)
+  tick_size_override: 0.1    # optional normalized tick (e.g., 0.1); null = use exchange precision
+
+clients:
+  price_bands:
+    bands_bps: [50,100,200,500,1000]  
+  volume_bands:
+    bands: [1,5,10,25,50]
+    scale: M
+
