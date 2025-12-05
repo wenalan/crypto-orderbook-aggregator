@@ -18,3 +18,16 @@ target_link_libraries(aggregator
     Boost::system
     OpenSSL::SSL OpenSSL::Crypto
 )
+
+add_executable(binance_book_printer
+  binance_book_printer.cpp
+  binance_adapter.cpp
+  binance_adapter.h
+)
+
+target_link_libraries(binance_book_printer
+  PRIVATE
+    common
+    Boost::system
+    OpenSSL::SSL OpenSSL::Crypto
+)
